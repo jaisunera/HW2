@@ -29,6 +29,7 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
     private JButton addUserButton;
     private JButton addGroupButton;
     private JButton userViewButton;
+    private JButton validateIDButton;
 
 
     private JButton userTotalButton;
@@ -105,6 +106,7 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
         frame.add(addUserButton);
         frame.add(addGroupButton);
         frame.add(userViewButton);
+        frame.add(validateIDButton);
 
 
         frame.add(userTotalButton);
@@ -155,7 +157,6 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
                 label.setOpaque(true);
             }
 
-
             return component;
         }
     }
@@ -165,7 +166,8 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
     private void createAndConfigureUserGroupButtons() {
         addUserButton = createAndConfigureButton("Add User", 500, 25, 200);
         addGroupButton = createAndConfigureButton("Add Group",500, 100, 200);
-        userViewButton = createAndConfigureButton("Open User View", 250, 175, 450);
+        userViewButton = createAndConfigureButton("Open User View", 250, 200, 200);
+        validateIDButton = createAndConfigureButton("Valid ID", 500, 200, 200);
     }
 
 
@@ -233,9 +235,49 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
             showMessageTotal();
         } else if (e.getSource() == positiveTotalButton) {
             showPositivePercentage();
+        } else if (e.getSource() == validateIDButton) {
+            validateID();
         }
     }
 
+    //Method to validate ID
+    private void validateID() {
+        String idToValidate = userIDField.getText().trim(); //Get ID from the text field and remove leading/trailing spaces
+
+        //Check for duplicate IDs and spaces within the ID
+        boolean isValid = isIDValid(idToValidate);
+
+        //Show dialog message based on validation result
+        if (isValid) {
+            showMessageDialog("ID Validation", "The ID '" + idToValidate + "' is valid.");
+        } else {
+            showMessageDialog("ID Validation", "The ID '" + idToValidate + "' is not valid.");
+        }
+    }
+
+    //Method to check if the ID is valid based on criteria: no duplicate IDs and no spaces within the ID
+    private boolean isIDValid(String idToValidate) {
+        //Check for no spaces within the ID
+        if (idToValidate.contains(" ")) {
+            return false;
+        }
+
+        //Check for duplicate IDs
+        for (Group group : groupList) {
+            //Check in group IDs
+            if (group.getId().equals(idToValidate)) {
+                return false;
+            }
+            //Check in user IDs
+            for (User user : userList) {
+                if (user.getId().equals(idToValidate)) {
+                    return false;
+                }
+            }
+        }
+
+        return true; //ID is valid if no duplicates and no spaces
+    }
 
     //Method to add a new user to the tree structure
     private void addUser() {
