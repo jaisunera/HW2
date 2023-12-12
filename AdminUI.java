@@ -31,6 +31,8 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
     private JButton messageTotalButton;
     private JButton positiveTotalButton;
 
+    private JButton lastUpdatedUserButton; //New button to display the last updated user ID
+
     private String newUserID;
     private String newGroupID;
 
@@ -64,7 +66,8 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
         //Buttons to add user and groups + open user view
         createAndConfigureUserGroupButtons();
 
-        //Buttons to show user total, group total, messages total, and positive percentage
+        //Buttons to show user total, group total, messages total, and positive
+        //percentage
         createAndConfigureShowButtons();
 
         //Adds root node of the tree
@@ -84,12 +87,14 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
         frame.add(addUserButton);
         frame.add(addGroupButton);
         frame.add(userViewButton);
-        frame.add(validateIDButton); //Add validate button
 
         frame.add(userTotalButton);
         frame.add(groupTotalButton);
         frame.add(messageTotalButton);
         frame.add(positiveTotalButton);
+
+        frame.add(validateIDButton); //Add validate button
+        frame.add(lastUpdatedUserButton); //Add last updated user button
 
         frame.setVisible(true); //Set frame visible
     }
@@ -97,7 +102,7 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
     //Singleton pattern
     public static AdminUI getInstance() {
         if (instance == null) {
-        instance = new AdminUI();
+            instance = new AdminUI();
         }
         return instance;
     }
@@ -133,15 +138,18 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
         }
     }
 
-    //Method to create add user and group buttons + user view button and position them
+    //Method to create add user and group buttons + user view button and position
+    //them
     private void createAndConfigureUserGroupButtons() {
         addUserButton = createAndConfigureButton("Add User", 500, 25, 200);
         addGroupButton = createAndConfigureButton("Add Group", 500, 100, 200);
         userViewButton = createAndConfigureButton("Open User View", 250, 200, 450);
         validateIDButton = createAndConfigureButton("Validate ID", 250, 450, 200); //Validate button
+        lastUpdatedUserButton = createAndConfigureButton("Last Updated User", 500, 450, 200);
     }
 
-    //Method to create show user total, group total, messages total, and positive percentage buttons and position them
+    //Method to create show user total, group total, messages total, and positive
+    //percentage buttons and position them
     private void createAndConfigureShowButtons() {
         userTotalButton = createAndConfigureButton("Show User Total", 250, 300, 200);
         groupTotalButton = createAndConfigureButton("Show Group Total", 500, 300, 200);
@@ -179,39 +187,40 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
     //Method to update the tree
     public void valueChanged(TreeSelectionEvent e) {
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) treeView.getLastSelectedPathComponent(); //Retreives last node in the tree
-
         //If node is not null and not a leaf, set selectedGroup to the currently non-leaf node
         if (node != null && !node.isLeaf()) {
-        selectedGroup = node;
+            selectedGroup = node;
         }
     }
 
     //Method to add an action listener to all the buttons
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == addUserButton) {
-        addUser();
+            addUser();
         } else if (e.getSource() == addGroupButton) {
-        addGroup();
+            addGroup();
         } else if (e.getSource() == userViewButton) {
-        openUserPanel();
+            openUserPanel();
         } else if (e.getSource() == groupTotalButton) {
-        showGroupTotal();
+            showGroupTotal();
         } else if (e.getSource() == userTotalButton) {
-        showUserTotal();
+            showUserTotal();
         } else if (e.getSource() == messageTotalButton) {
-        showMessageTotal();
+            showMessageTotal();
         } else if (e.getSource() == positiveTotalButton) {
-        showPositivePercentage();
-        } else if (e.getSource() == validateIDButton) {
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode) treeView.getLastSelectedPathComponent();
-        validateSelectedNodeID(node); //Pass the node to validate
+            showPositivePercentage();
+        } else if (e.getSource() == validateIDButton) { //Modify to validateIDButton
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) treeView.getLastSelectedPathComponent();
+            validateSelectedNodeID(node); //Pass the node to validate
+        } else if (e.getSource() == lastUpdatedUserButton) {
+            findLastUpdatedUser();
         }
     }
 
     //Method to validate the selected node's ID
     private boolean validateSelectedNodeID(DefaultMutableTreeNode node) {
         if (node == null || node.getUserObject() == null) {
-        return false;
+            return false;
         }
 
         String selectedID = node.getUserObject().toString();
@@ -222,22 +231,40 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
 
         //Traverse through the tree to check for duplicate IDs
         for (int i = 0; i < rootNode.getChildCount(); i++) {
-        DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) rootNode.getChildAt(i);
-        if (childNode != node && selectedID.equals(childNode.getUserObject().toString())) {
-            showMessageDialog("Validation", "Not valid, not a unique ID.");
-            return false;
-        }
+            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) rootNode.getChildAt(i);
+            if (childNode != node && selectedID.equals(childNode.getUserObject().toString())) {
+                showMessageDialog("Validation", "Not valid, not a unique ID.");
+                return false;
+            }
         }
 
         //Check for spaces within the ID
         if (selectedID.contains(" ")) {
-        showMessageDialog("Validation", "Not valid, ID contains spaces.");
-        return false;
+            showMessageDialog("Validation", "Not valid, ID contains spaces.");
+            return false;
         }
 
         //If none of the validation conditions triggered, print "Valid ID!"
         showMessageDialog("Validation", "Valid ID!");
         return true;
+    }
+
+    private void findLastUpdatedUser() {
+        long maxUpdateTime = Long.MIN_VALUE;
+        User lastUpdatedUser = null;
+
+        for (User user : userList) {
+            if (user.getId() != null && user.getLastUpdateTime() > maxUpdateTime) {
+                maxUpdateTime = user.getLastUpdateTime();
+                lastUpdatedUser = user;
+            }
+        }
+
+        if (lastUpdatedUser != null) {
+            System.out.println("Last Updated User: " + lastUpdatedUser.getId());
+        } else {
+            System.out.println("No users found or no updates yet.");
+        }
     }
 
     //Method to add a new user to the tree structure
@@ -253,8 +280,8 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
         //Check if the selected node is a group node, add user under group node
         DefaultMutableTreeNode groupNode = getSelectedNode();
         if (groupNode != null && groupNode.getUserObject().getClass().equals(rootGroup.getClass())) {
-        insertNodeIntoTree(userTreeNode, groupNode);
-        addToGroup(newUser, groupNode);
+            insertNodeIntoTree(userTreeNode, groupNode);
+            addToGroup(newUser, groupNode);
         }
     }
 
@@ -271,8 +298,8 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
         //Check if the selected node is a group node, add group under group node
         DefaultMutableTreeNode groupNode = getSelectedNode();
         if (groupNode != null && groupNode.getUserObject().getClass().equals(rootGroup.getClass())) {
-        insertNodeIntoTree(groupTreeNode, groupNode);
-        addToGroup(newGroup, groupNode);
+            insertNodeIntoTree(groupTreeNode, groupNode);
+            addToGroup(newGroup, groupNode);
         }
     }
 
@@ -291,7 +318,8 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
 
     //Method to add user or group inot a group node in the tree
     private void addToGroup(Id id, DefaultMutableTreeNode groupNode) {
-        //If group node is the root, add new node to root, else find the selected group and add the node to that group
+        //If group node is the root, add new node to root, else find the selected group
+        //and add the node to that group
         if (groupNode == rootNode) {
         rootGroup.addId(id);
         } else {
@@ -305,17 +333,16 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
         TreePath currentPath = treeView.getSelectionPath(); //Get the path of the node
         //If node is currently in the tree, retreive selected node and group node
         if (currentPath != null) {
-        DefaultMutableTreeNode currentNode = (DefaultMutableTreeNode) currentPath.getLastPathComponent();
-        DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) currentNode.getParent();
+            DefaultMutableTreeNode currentNode = (DefaultMutableTreeNode) currentPath.getLastPathComponent();
+            DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) currentNode.getParent();
 
-        //If the selected node is a user, find the index of the group and user, then
-        //get user object from group, and open user view for that user
-        if (currentNode.getUserObject().getClass().equals(rootGroup.getClass()) == false) {
-            int index1 = groupList.indexOf(groupNode.getUserObject());
-            int index2 = groupList.get(index1).findIdIndex(currentNode.getUserObject());
-            User user = (User) groupList.get(index1).getId(index2);
-            UserUI uPanel = new UserUI(user, userList);
-        }
+            //If the selected node is a user, find the index of the group and user, then get user object from group, and open user view for that user
+            if (currentNode.getUserObject().getClass().equals(rootGroup.getClass()) == false) {
+                int index1 = groupList.indexOf(groupNode.getUserObject());
+                int index2 = groupList.get(index1).findIdIndex(currentNode.getUserObject());
+                User user = (User) groupList.get(index1).getId(index2);
+                UserUI uPanel = new UserUI(user, userList);
+            }
         }
     }
 
@@ -357,11 +384,11 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
         //If no messages, show percentage as 0; else calculate % and print dialog box
         //displaying positive message percentage
         if (messagesTotal == 0) {
-        showMessageDialog("Positive Percentage", "Positive Message Percentage: 0.0%");
+            showMessageDialog("Positive Percentage", "Positive Message Percentage: 0.0%");
         } else {
-        double positivePercent = ((double) positivityTotal / messagesTotal) * 100;
-        String percentage = String.format("%.1f", positivePercent);
-        showMessageDialog("Positive Percentage", "Positive Message Percentage: " + percentage + "%");
+            double positivePercent = ((double) positivityTotal / messagesTotal) * 100;
+            String percentage = String.format("%.1f", positivePercent);
+            showMessageDialog("Positive Percentage", "Positive Message Percentage: " + percentage + "%");
         }
     }
 
@@ -369,5 +396,4 @@ public class AdminUI implements ActionListener, TreeSelectionListener {
     private void showMessageDialog(String title, String message) {
         JOptionPane.showMessageDialog(frame, message, title, JOptionPane.INFORMATION_MESSAGE);
     }
-
 }
